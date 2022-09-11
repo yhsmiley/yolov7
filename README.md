@@ -17,7 +17,7 @@ cd yolov7/weights
 ./get_weights.sh yolov7 yolov7-e6
 ```
 - make sure the requirements for YOLOv7 are installed
-- in the main project folder, install YOLOv7 as a package (--no-binary is used to skip building of the wheel as the model weights are huge, takes a long time to build)
+- in the main project folder, install YOLOv7 as a package (`--no-binary` is used to skip building of the wheel as the model weights are huge, takes a long time to build)
 ```
 pip3 install /path/to/yolov7 --no-binary=:all:
 ```
@@ -25,7 +25,7 @@ OR as an editable package (if you need to make changes to the code)
 ```
 pip3 install -e /path/to/yolov7
 ```
-- import the YOLOv7 wrapper class for inference (refer to scripts/inference.py for example usage)
+- import the YOLOv7 wrapper class for inference (refer to `scripts/inference.py` for example usage)
 ```
 from yolov7.yolov7 import YOLOv7
 ```
@@ -34,6 +34,7 @@ from yolov7.yolov7 import YOLOv7
 
 - [x] allow usage of coco format labels
 - [ ] allow different backbone learning rate for training
+- [x] solve memory leak issue when using YOLOv7 as package for inference
 
 # Official YOLOv7
 
