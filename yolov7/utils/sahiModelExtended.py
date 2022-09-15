@@ -1065,22 +1065,93 @@ class TorchVisionDetectionModel(DetectionModel):
 
 
 class Yolov7DetectionModel(DetectionModel):
+    def __init__(
+        self,
+        model_path: Optional[str] = None,
+        model: Optional[Any] = None,
+        config_path: Optional[str] = None,
+        device: Optional[str] = None,
+        mask_threshold: float = 0.5,
+        confidence_threshold: float = 0.25,
+        category_mapping: Optional[Dict] = None,
+        category_remapping: Optional[Dict] = None,
+        load_at_init: bool = True,
+        image_size: int = None,
+        bgr: bool = False,
+        same_size: bool = True,
+        max_batch_size: int = 4,
+        trace: bool=False,
+        half: bool=True
+    ):
+        """
+        Init object detection/instance segmentation model.
+        Args:
+            model_path: str
+                Path for the instance segmentation model weight
+            config_path: str
+                Path for the mmdetection instance segmentation model config file
+            device: str
+                Torch device, "cpu" or "cuda"
+            mask_threshold: float
+                Value to threshold mask pixels, should be between 0 and 1
+            confidence_threshold: float
+                All predictions with score < confidence_threshold will be discarded
+            category_mapping: dict: str to str
+                Mapping from category id (str) to category name (str) e.g. {"1": "pedestrian"}
+            category_remapping: dict: str to int
+                Remap category ids based on category names, after performing inference e.g. {"car": 3}
+            load_at_init: bool
+                If True, automatically loads the model at initalization
+            image_size: int
+                Inference input size.
+            bgr : bool 
+                If True, images are in BGR 
+            same_size : bool
+                If True, images that are passed in are the same size 
+            max_batch_size : int 
+                Batch size of the  model 
+            trace :
+                If True, model is trace 
+        """
+        self.model_path = model_path
+        self.config_path = config_path
+        self.model = None
+        self.device = device
+        self.mask_threshold = mask_threshold
+        self.confidence_threshold = confidence_threshold
+        self.category_mapping = category_mapping
+        self.category_remapping = category_remapping
+        self.image_size = image_size
+        self._original_predictions = None
+        self._object_prediction_list_per_image = None
+        # New parameters to load into yolov7
+        self.bgr = bgr
+        self.same_size = same_size
+        self.max_batch_size = max_batch_size
+        self.trace = trace
+        self.half=half
+
+        # automatically set device if its None
+        if not (self.device):
+            self.device = "cuda:0" if is_torch_cuda_available() else "cpu"
+
+        # automatically load model if load_at_init is True
+        if load_at_init:
+            if model:
+                self.set_model(model)
+            else:
+                self.load_model()
+
     def load_model(self):
         """
         Detection model is initialized and set to self.model.
         """
         check_requirements(["torch"])
         from yolov7.yolov7 import YOLOv7
-        from importlib import resources
         import os.path
-        
-        modelPathDict = ['yolov7','yolov7-e6']
-        if(self.model_path not in modelPathDict) :
-            raise ValueError("model_path option is not valid; please choose the correct version")
-        weightPath = resources.files('yolov7').joinpath('weights/' + self.model_path + '_state.pt')
-        cfgPath = resources.files('yolov7').joinpath('cfg/deploy/' + self.model_path + '.yaml')
 
-        if(not os.path.isfile(weightPath) or not os.path.isfile(cfgPath)):
+
+        if(not os.path.isfile(self.model_path) or not os.path.isfile(self.config_path)):
             raise ValueError("Please ensure you have download the download desired weights using arguments to bash script")
 
         if(self.image_size is None):
@@ -1088,18 +1159,18 @@ class Yolov7DetectionModel(DetectionModel):
 
         try:
             model = YOLOv7(
-                weights=weightPath,
-                cfg=cfgPath,
-                bgr=True,
-                gpu_device=0,
+                weights=self.model_path,
+                cfg=self.config_path,
+                bgr=self.bgr,
+                gpu_device=self.device,
                 model_image_size=self.image_size,
-                max_batch_size=16,
-                half=True,
-                same_size=True,
+                max_batch_size=self.max_batch_size,
+                half=self.half,
+                same_size=self.same_size,
                 conf_thresh=self.confidence_threshold,
-                trace=False,
+                trace=self.trace,
             )
-            
+
             self.model = model 
 
         except Exception as e:
