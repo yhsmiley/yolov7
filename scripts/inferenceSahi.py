@@ -1,7 +1,6 @@
 from importlib import resources
 from sahi.predict import predict,get_prediction,get_sliced_prediction
 from yolov7.utils.sahiModelExtended import Yolov7DetectionModel
-from yolov7.utils.general import increment_path
 from sahi.slicing import slice_image
 
 # same_size     :   True if all the image that are passed in are the same size (defaulted to True)
@@ -16,7 +15,6 @@ from sahi.slicing import slice_image
 
 weightPath = resources.files('yolov7').joinpath('weights/yolov7-e6_state.pt')
 cfgPath = resources.files('yolov7').joinpath('cfg/deploy/yolov7-e6.yaml')
-
 
 model = Yolov7DetectionModel(
     image_size = 1280,
