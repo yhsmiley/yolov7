@@ -1,10 +1,10 @@
 import logging
-import numpy as np
 import pybboxes.functional as pbf
-
-from typing import Any, Dict, List, Optional, Tuple, Union
 import warnings
 
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import numpy as np
 
 from sahi.prediction import ObjectPrediction
 from sahi.utils.compatibility import fix_full_shape_list, fix_shift_amount_list
@@ -202,9 +202,9 @@ class Yolov7DetectionModel(DetectionModel):
         Init yolov7 model.
         Args:
             model_path: str
-                Path for the instance segmentation model weight
+                Path for the yolov7 model weight
             config_path: str
-                Path for the mmdetection instance segmentation model config file
+                Path for the yolov7 model config file
             device: str
                 Torch device, "cpu" or "cuda"
             mask_threshold: float
@@ -341,8 +341,6 @@ class Yolov7DetectionModel(DetectionModel):
                 Size of the full image after shifting, should be in the form of
                 List[[height, width],[height, width],...]
         """
-        # original_predictions = self._original_predictions
-
         if isinstance(shift_amount_list[0], int):
             shift_amount_list = [shift_amount_list]
         if full_shape_list is not None and isinstance(full_shape_list[0], int):
@@ -355,9 +353,7 @@ class Yolov7DetectionModel(DetectionModel):
         object_prediction_list = []
       
         for _, det in enumerate(self._original_predictions):  
-            bbox, score, className = det
-        
-            category_name = className
+            bbox, score, category_name = det
 
             object_prediction = ObjectPrediction(
                 bbox=bbox,
