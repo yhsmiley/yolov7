@@ -1,7 +1,8 @@
 from importlib import resources
+
 from sahi.predict import predict,get_prediction,get_sliced_prediction
-from yolov7.utils.sahiModelExtended import Yolov7DetectionModel
 from sahi.slicing import slice_image
+from yolov7.utils.sahiModelExtended import Yolov7DetectionModel
 
 # bgr           :   True if image is read via BGR (defaulted to False as sahi utilise PIL)
 # device        :   torch device 

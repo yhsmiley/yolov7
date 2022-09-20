@@ -1,7 +1,6 @@
 import logging
 import pybboxes.functional as pbf
 import warnings
-
 from typing import Any, Dict, List, Optional, Tuple, Union
 
 import numpy as np
