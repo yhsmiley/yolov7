@@ -2,15 +2,17 @@ import logging
 import numpy as np
 import pybboxes.functional as pbf
 
+from typing import Any, Dict, List, Optional, Tuple, Union
+import warnings
+
+
 from sahi.prediction import ObjectPrediction
 from sahi.utils.compatibility import fix_full_shape_list, fix_shift_amount_list
 from sahi.utils.cv import get_bbox_from_bool_mask
 from sahi.utils.import_utils import check_requirements, is_available
 from sahi.utils.torch import is_torch_cuda_available
 
-from typing import Any, Dict, List, Optional, Tuple, Union
 
-import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -353,11 +355,8 @@ class Yolov7DetectionModel(DetectionModel):
         object_prediction_list = []
       
         for _, det in enumerate(self._original_predictions):  
-            bb, score, className = det
-            x1, y1, x2, y2  = bb
+            bbox, score, className = det
         
-            bbox = [x1, y1, x2, y2]
-
             category_name = className
 
             object_prediction = ObjectPrediction(
