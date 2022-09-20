@@ -1,10 +1,4 @@
-# OBSS SAHI Tool
-# Code written by Fatih C Akyon, 2020.
-
 import logging
-import warnings
-from typing import Any, Dict, List, Optional, Tuple, Union
-
 import numpy as np
 import pybboxes.functional as pbf
 
@@ -13,6 +7,10 @@ from sahi.utils.compatibility import fix_full_shape_list, fix_shift_amount_list
 from sahi.utils.cv import get_bbox_from_bool_mask
 from sahi.utils.import_utils import check_requirements, is_available
 from sahi.utils.torch import is_torch_cuda_available
+
+from typing import Any, Dict, List, Optional, Tuple, Union
+
+import warnings
 
 logger = logging.getLogger(__name__)
 
@@ -200,7 +198,7 @@ class Yolov7DetectionModel(DetectionModel):
         half: bool=True
     ):
         """
-        Init object detection/instance segmentation model.
+        Init yolov7 model.
         Args:
             model_path: str
                 Path for the instance segmentation model weight
@@ -355,8 +353,7 @@ class Yolov7DetectionModel(DetectionModel):
 
         object_prediction_list_per_image = []
         object_prediction_list = []
-        # print(self._original_predictions)
-        # for _, image_predictions_in_xyxy_format in enumerate(self._original_predictions.xyxy):
+      
         for _, det in enumerate(self._original_predictions):  
             bb, score, className = det
             x1, y1, x2, y2  = bb
@@ -364,7 +361,7 @@ class Yolov7DetectionModel(DetectionModel):
             bbox = [x1, y1, x2, y2]
 
             category_name = className
-            # category_id = pred[5]
+
             object_prediction = ObjectPrediction(
                 bbox=bbox,
                 category_id=self.model.classname_to_idx(category_name),
