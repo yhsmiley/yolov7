@@ -36,7 +36,7 @@ class DetectionModel:
             model_path: str
                 Path for the instance segmentation model weight
             config_path: str
-                Path for the mmdetection instance segmentation model config file
+                Path for the instance segmentation model config file
             device: str
                 Torch device, "cpu" or "cuda"
             mask_threshold: float

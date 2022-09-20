@@ -2,6 +2,7 @@ from importlib import resources
 
 from sahi.predict import predict,get_prediction,get_sliced_prediction
 from sahi.slicing import slice_image
+
 from yolov7.utils.sahiModelExtended import Yolov7DetectionModel
 
 # bgr           :   True if image is read via BGR (defaulted to False as sahi utilise PIL)
@@ -10,7 +11,7 @@ from yolov7.utils.sahiModelExtended import Yolov7DetectionModel
 # config_path   :   Path for the model config file
 # model_path    :   the type of model being implemented (yolov7/yolov7-e6)
 # image_size    :   Inference input size. (defaulted to 640)
-# confidence_threshold  :   confidence threshold (defaulted to 0.25)
+# confidence_threshold  :   confidence threshold (defaulted to 0.25)    
 
 weightPath = resources.files('yolov7').joinpath('weights/yolov7-e6_state.pt')
 cfgPath = resources.files('yolov7').joinpath('cfg/deploy/yolov7-e6.yaml')
