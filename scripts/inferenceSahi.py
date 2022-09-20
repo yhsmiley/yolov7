@@ -12,7 +12,6 @@ from yolov7.utils.sahiModelExtended import Yolov7DetectionModel
 # image_size    :   Inference input size. (defaulted to 640)
 # confidence_threshold  :   confidence threshold (defaulted to 0.25)
 
-
 weightPath = resources.files('yolov7').joinpath('weights/yolov7-e6_state.pt')
 cfgPath = resources.files('yolov7').joinpath('cfg/deploy/yolov7-e6.yaml')
 

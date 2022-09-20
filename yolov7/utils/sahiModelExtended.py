@@ -201,7 +201,7 @@ class Yolov7DetectionModel(DetectionModel):
         Init yolov7 model.
         Args:
             model_path: str
-                Path for the yolov7 model weight
+                Path for the yolov7 model weight file
             config_path: str
                 Path for the yolov7 model config file
             device: str
