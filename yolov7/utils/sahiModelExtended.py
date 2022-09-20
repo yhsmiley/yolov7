@@ -192,7 +192,6 @@ class Yolov7DetectionModel(DetectionModel):
         load_at_init: bool = True,
         image_size: int = None,
         bgr: bool = False,
-        same_size: bool = True,
         max_batch_size: int = 4,
         trace: bool=False,
         half: bool=True
@@ -220,8 +219,6 @@ class Yolov7DetectionModel(DetectionModel):
                 Inference input size.
             bgr : bool 
                 If True, images are in BGR 
-            same_size : bool
-                If True, images that are passed in are the same size 
             max_batch_size : int 
                 Batch size of the  model 
             trace :
@@ -240,7 +237,6 @@ class Yolov7DetectionModel(DetectionModel):
         self._object_prediction_list_per_image = None
         # New parameters to load into yolov7
         self.bgr = bgr
-        self.same_size = same_size
         self.max_batch_size = max_batch_size
         self.trace = trace
         self.half=half
