@@ -257,11 +257,14 @@ class Yolov7DetectionModel(DetectionModel):
         Detection model is initialized and set to self.model.
         """
         check_requirements(["torch"])
+        
+        from pathlib import Path
         from yolov7.yolov7 import YOLOv7
-        import os.path
 
+        modelPath = Path(self.model_path)
+        configPath = Path(self.config_path)
 
-        if(not os.path.isfile(self.model_path) or not os.path.isfile(self.config_path)):
+        if(not modelPath.is_file() or not configPath.is_file()):
             raise ValueError("Please ensure you have download the download desired weights using arguments to bash script")
 
         if(self.image_size is None):
@@ -276,7 +279,6 @@ class Yolov7DetectionModel(DetectionModel):
                 model_image_size=self.image_size,
                 max_batch_size=self.max_batch_size,
                 half=self.half,
-                same_size=self.same_size,
                 conf_thresh=self.confidence_threshold,
                 trace=self.trace,
             )
