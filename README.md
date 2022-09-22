@@ -8,6 +8,7 @@ Last "merge" date: 7th Sept 2022
 
 - YOLOv7 can be used as a package, with minimal requirements for inference only
 - **Only Python >= 3.9 is supported**
+- Added SAHI functionality in it 
 
 ## Using YOLOv7 as a package for inference
 
@@ -29,6 +30,16 @@ pip3 install -e /path/to/yolov7
 - import the YOLOv7 wrapper class for inference (refer to `scripts/inference.py` for example usage)
 ```
 from yolov7.yolov7 import YOLOv7
+```
+## Using YOLOv7 as part of SAHI inference 
+- install YOLOv7 via the method mentioned above
+- ensure SAHI library is installed 
+```
+pip3 install sahi
+```
+- import the sahi model for inference (refer to `scripts/inferenceSahi.py` for example usage)
+```
+from yolov7.utils.sahiModelExtended import Yolov7DetectionModel
 ```
 
 ## TODO
