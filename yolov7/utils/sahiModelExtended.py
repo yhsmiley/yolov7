@@ -215,15 +215,15 @@ class Yolov7DetectionModel(DetectionModel):
             category_remapping: dict: str to int
                 Remap category ids based on category names, after performing inference e.g. {"car": 3}
             load_at_init: bool
-                If True, automatically loads the model at initalization
+                If True, automatically loads the model at initalization. Defaulted to True 
             image_size: int
                 Inference input size.
             bgr : bool 
-                If True, images are in BGR 
+                If True, images are in BGR. Defaulted to False
             max_batch_size : int 
                 Batch size of the  model 
             trace :
-                If True, model is trace 
+                If True, model is trace. Defaulted to False
         """
         self.model_path = model_path
         self.config_path = config_path
@@ -262,17 +262,14 @@ class Yolov7DetectionModel(DetectionModel):
         from pathlib import Path
         from yolov7.yolov7 import YOLOv7
 
-        modelPath = Path(self.model_path)
-        configPath = Path(self.config_path)
-
-        if(not modelPath.is_file() or not configPath.is_file()):
+        if(not Path(self.model_path).is_file() or not Path(self.config_path).is_file()):
             raise ValueError("Please ensure you have download the download desired weights using arguments to bash script")
 
         if(self.image_size is None):
             self.image_size = 640
 
         try:
-            model = YOLOv7(
+            self.model = YOLOv7(
                 weights=self.model_path,
                 cfg=self.config_path,
                 bgr=self.bgr,
@@ -283,8 +280,6 @@ class Yolov7DetectionModel(DetectionModel):
                 conf_thresh=self.confidence_threshold,
                 trace=self.trace,
             )
-
-            self.model = model 
 
         except Exception as e:
             raise TypeError("Error loading model yolov7 :  ", e)
@@ -301,9 +296,7 @@ class Yolov7DetectionModel(DetectionModel):
         if self.model is None:
             raise ValueError("Model is not loaded, load it by calling .load_model()")
 
-        prediction_result = self.model.detect_get_box_in(image, box_format='ltrb', classes=None, buffer_ratio=0.0)
-
-        self._original_predictions = prediction_result
+        self._original_predictions = self.model.detect_get_box_in(image, box_format='ltrb', classes=None, buffer_ratio=0.0)
 
     @property
     def num_categories(self):
@@ -317,8 +310,8 @@ class Yolov7DetectionModel(DetectionModel):
         """
         Returns if model output contains segmentation mask
         """
-        has_mask = self.model.with_mask
-        return has_mask
+
+        return self.model.with_mask
 
     @property
     def category_names(self):
