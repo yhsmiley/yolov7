@@ -15,11 +15,26 @@ Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-t
     </a>
 </div>
 
+## To convert weights for use in inference branch
+
+``` shell
+python reparameterization.py --model_arch yolov7 --training_ckpt runs/train/yolov7/weights/last.pt --output_ckpt weights/yolov7_last.pt --deploy_cfg cfg/deploy/yolov7.yaml --nc 80
+```
+
+``` shell
+python save_state_dict.py --weights weights/yolov7_last.pt --save_path weights/yolov7_last_state.pt --cfg cfg/deploy/yolov7.yaml
+```
+
+## TODO
+
+- [ ] allow usage of coco format labels
+- [ ] allow different backbone learning rate for training
+
 ## Web Demo
 
 - Integrated into [Huggingface Spaces 🤗](https://huggingface.co/spaces/akhaliq/yolov7) using Gradio. Try out the Web Demo [![Hugging Face Spaces](https://img.shields.io/badge/%F0%9F%A4%97%20Hugging%20Face-Spaces-blue)](https://huggingface.co/spaces/akhaliq/yolov7)
 
-## Performance 
+## Performance
 
 MS COCO
 
