@@ -1,6 +1,7 @@
 # Dataset utils and dataloaders
 
 import glob
+import json
 import logging
 import math
 import os
@@ -26,6 +27,7 @@ from copy import deepcopy
 from torchvision.utils import save_image
 from torchvision.ops import roi_pool, roi_align, ps_roi_pool, ps_roi_align
 
+from utils.coco2yolo import COCO2YOLO
 from utils.general import check_requirements, xyxy2xywh, xywh2xyxy, xywhn2xyxy, xyn2xy, segment2box, segments2boxes, \
     resample_segments, clean_str
 from utils.torch_utils import torch_distributed_zero_first
@@ -63,7 +65,7 @@ def exif_size(img):
 
 
 def create_dataloader(path, imgsz, batch_size, stride, opt, hyp=None, augment=False, cache=False, pad=0.0, rect=False,
-                      rank=-1, world_size=1, workers=8, image_weights=False, quad=False, prefix=''):
+                      rank=-1, world_size=1, workers=8, image_weights=False, quad=False, prefix='', eval_coco=False):
     # Make sure only the first process in DDP process the dataset first, and the following others can use the cache
     with torch_distributed_zero_first(rank):
         dataset = LoadImagesAndLabels(path, imgsz, batch_size,
@@ -75,19 +77,21 @@ def create_dataloader(path, imgsz, batch_size, stride, opt, hyp=None, augment=Fa
                                       stride=int(stride),
                                       pad=pad,
                                       image_weights=image_weights,
-                                      prefix=prefix)
+                                      prefix=prefix,
+                                      eval_coco=eval_coco)
 
     batch_size = min(batch_size, len(dataset))
     nw = min([os.cpu_count() // world_size, batch_size if batch_size > 1 else 0, workers])  # number of workers
     sampler = torch.utils.data.distributed.DistributedSampler(dataset) if rank != -1 else None
     loader = torch.utils.data.DataLoader if image_weights else InfiniteDataLoader
     # Use torch.utils.data.DataLoader() if dataset.properties will update during training else InfiniteDataLoader()
+    collate_fn = LoadImagesAndLabels.collate_fn4 if quad else lambda b, eval_coco=eval_coco: LoadImagesAndLabels.collate_fn(b, eval_coco)
     dataloader = loader(dataset,
                         batch_size=batch_size,
                         num_workers=nw,
                         sampler=sampler,
                         pin_memory=True,
-                        collate_fn=LoadImagesAndLabels.collate_fn4 if quad else LoadImagesAndLabels.collate_fn)
+                        collate_fn=collate_fn)
     return dataloader, dataset
 
 
@@ -344,15 +348,26 @@ class LoadStreams:  # multiple IP or RTSP cameras
         return 0  # 1E12 frames = 32 streams at 30 FPS for 30 years
 
 
+def replace_dir(path, src, dst):
+    # convert to list so that we can change elements
+    parts = list(path.parts)
+
+    # replace part that matches src with dst
+    if src in parts:
+        parts[parts.index(src)] = dst
+
+    # replace suffix with '.txt'
+    return Path(*parts)
+
+
 def img2label_paths(img_paths):
     # Define label paths as a function of image paths
-    sa, sb = os.sep + 'images' + os.sep, os.sep + 'labels' + os.sep  # /images/, /labels/ substrings
-    return ['txt'.join(x.replace(sa, sb, 1).rsplit(x.split('.')[-1], 1)) for x in img_paths]
+    return [str(replace_dir(x, 'images', 'labels').with_suffix('.txt')) for x in img_paths]
 
 
 class LoadImagesAndLabels(Dataset):  # for training/testing
     def __init__(self, path, img_size=640, batch_size=16, augment=False, hyp=None, rect=False, image_weights=False,
-                 cache_images=False, single_cls=False, stride=32, pad=0.0, prefix=''):
+                 cache_images=False, single_cls=False, stride=32, pad=0.0, prefix='', eval_coco=False):
         self.img_size = img_size
         self.augment = augment
         self.hyp = hyp
@@ -361,33 +376,51 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         self.mosaic = self.augment and not self.rect  # load 4 images at a time into a mosaic (only during training)
         self.mosaic_border = [-img_size // 2, -img_size // 2]
         self.stride = stride
-        self.path = path        
+        self.path = path
         #self.albumentations = Albumentations() if augment else None
+        self.eval_coco = eval_coco
 
         try:
             f = []  # image files
+            img_ids = []
             for p in path if isinstance(path, list) else [path]:
-                p = Path(p)  # os-agnostic
-                if p.is_dir():  # dir
-                    f += glob.glob(str(p / '**' / '*.*'), recursive=True)
-                    # f = list(p.rglob('**/*.*'))  # pathlib
-                elif p.is_file():  # file
-                    with open(p, 'r') as t:
-                        t = t.read().strip().splitlines()
-                        parent = str(p.parent) + os.sep
-                        f += [x.replace('./', parent) if x.startswith('./') else x for x in t]  # local to global path
-                        # f += [p.parent / x.lstrip(os.sep) for x in t]  # local to global path (pathlib)
+                if Path(p).suffix == '.json':
+                    with open(p) as json_file:
+                        images = json.load(json_file)["images"]
+
+                    for img in images:
+                        file_name = img['file_name']
+                        img_path = Path(p).parent / 'images' / file_name
+                        f += [img_path]
+                        img_ids += [int(img['id'])]
+
+                    # create yolo labels in 'labels' folder
+                    print(f'creating yolo labels for {p}')
+                    label_folder = Path(p).parent / 'labels'
+                    c2y = COCO2YOLO(p, str(label_folder))
+                    c2y.coco2yolo()
                 else:
-                    raise Exception(f'{prefix}{p} does not exist')
-            self.img_files = sorted([x.replace('/', os.sep) for x in f if x.split('.')[-1].lower() in img_formats])
-            # self.img_files = sorted([x for x in f if x.suffix[1:].lower() in img_formats])  # pathlib
+                    p = Path(p)  # os-agnostic
+                    if p.is_dir():  # dir
+                        f += list(p.rglob('**/*.*'))  # pathlib
+                    elif p.is_file():  # file
+                        with open(p, 'r') as t:
+                            t = t.read().strip().splitlines()
+                            parent = str(p.parent) + os.sep
+                            f += [p.parent / x.lstrip(os.sep) for x in t]  # local to global path (pathlib)
+                    else:
+                        raise Exception(f'{prefix}{p} does not exist')
+                    img_ids = list(range(len(f)))
+
+            f_to_sort = [x for x in f if x.suffix[1:].lower() in img_formats]
+            self.img_files, self.img_ids = (list(t) for t in zip(*sorted(zip(f_to_sort, img_ids))))
             assert self.img_files, f'{prefix}No images found'
         except Exception as e:
             raise Exception(f'{prefix}Error loading data from {path}: {e}\nSee {help_url}')
 
         # Check cache
         self.label_files = img2label_paths(self.img_files)  # labels
-        cache_path = (p if p.is_file() else Path(self.label_files[0]).parent).with_suffix('.cache')  # cached labels
+        cache_path = Path(self.label_files[0]).parent.with_suffix('.cache') # cached labels
         if cache_path.is_file():
             cache, exists = torch.load(cache_path), True  # load
             #if cache['hash'] != get_hash(self.label_files + self.img_files) or 'version' not in cache:  # changed
@@ -428,6 +461,8 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             ar = s[:, 1] / s[:, 0]  # aspect ratio
             irect = ar.argsort()
             self.img_files = [self.img_files[i] for i in irect]
+            if self.eval_coco:
+                self.img_ids = [self.img_ids[i] for i in irect]
             self.label_files = [self.label_files[i] for i in irect]
             self.labels = [self.labels[i] for i in irect]
             self.shapes = s[irect]  # wh
@@ -626,14 +661,23 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         img = img[:, :, ::-1].transpose(2, 0, 1)  # BGR to RGB, to 3x416x416
         img = np.ascontiguousarray(img)
 
-        return torch.from_numpy(img), labels_out, self.img_files[index], shapes
+        if not self.eval_coco:
+            return torch.from_numpy(img), labels_out, self.img_files[index], shapes
+        else:
+            return torch.from_numpy(img), labels_out, self.img_files[index], shapes, self.img_ids[index]
 
     @staticmethod
-    def collate_fn(batch):
-        img, label, path, shapes = zip(*batch)  # transposed
-        for i, l in enumerate(label):
-            l[:, 0] = i  # add target image index for build_targets()
-        return torch.stack(img, 0), torch.cat(label, 0), path, shapes
+    def collate_fn(batch, eval_coco=False):
+        if not eval_coco:
+            img, label, path, shapes = zip(*batch)  # transposed
+            for i, l in enumerate(label):
+                l[:, 0] = i  # add target image index for build_targets()
+            return torch.stack(img, 0), torch.cat(label, 0), path, shapes
+        else:
+            img, label, path, shapes, img_id = zip(*batch)  # transposed
+            for i, l in enumerate(label):
+                l[:, 0] = i  # add target image index for build_targets()
+            return torch.stack(img, 0), torch.cat(label, 0), path, shapes, img_id
 
     @staticmethod
     def collate_fn4(batch):
@@ -668,7 +712,8 @@ def load_image(self, index):
     img = self.imgs[index]
     if img is None:  # not cached
         path = self.img_files[index]
-        img = cv2.imread(path)  # BGR
+        file_bytes = np.fromfile(path, np.uint8)
+        img = cv2.imdecode(file_bytes, cv2.IMREAD_COLOR)    # BGR
         assert img is not None, 'Image Not Found ' + path
         h0, w0 = img.shape[:2]  # orig hw
         r = self.img_size / max(h0, w0)  # resize image to img_size

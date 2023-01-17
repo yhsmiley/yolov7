@@ -739,7 +739,7 @@ class ComputeLossOTA:
                 + 3.0 * pair_wise_iou_loss
             )
 
-            matching_matrix = torch.zeros_like(cost)
+            matching_matrix = torch.zeros_like(cost, device='cpu')
 
             for gt_idx in range(num_gt):
                 _, pos_idx = torch.topk(
@@ -1049,7 +1049,7 @@ class ComputeLossBinOTA:
                 .repeat(1, pxyxys.shape[0], 1)
             )
 
-            num_gt = this_target.shape[0]            
+            num_gt = this_target.shape[0]
             cls_preds_ = (
                 p_cls.float().unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
                 * p_obj.unsqueeze(0).repeat(num_gt, 1, 1).sigmoid_()
@@ -1066,7 +1066,8 @@ class ComputeLossBinOTA:
                 + 3.0 * pair_wise_iou_loss
             )
 
-            matching_matrix = torch.zeros_like(cost)
+            matching_matrix = torch.zeros_like(cost, device='cpu')
+
 
             for gt_idx in range(num_gt):
                 _, pos_idx = torch.topk(
@@ -1321,7 +1322,7 @@ class ComputeLossAuxOTA:
                 
                 b, a, gj, gi = indices[i]
                 idx = (b == batch_idx)
-                b, a, gj, gi = b[idx], a[idx], gj[idx], gi[idx]                
+                b, a, gj, gi = b[idx], a[idx], gj[idx], gi[idx]
                 all_b.append(b)
                 all_a.append(a)
                 all_gj.append(gj)
@@ -1329,7 +1330,7 @@ class ComputeLossAuxOTA:
                 all_anch.append(anch[i][idx])
                 from_which_layer.append(torch.ones(size=(len(b),)) * i)
                 
-                fg_pred = pi[b, a, gj, gi]                
+                fg_pred = pi[b, a, gj, gi]
                 p_obj.append(fg_pred[:, 4:5])
                 p_cls.append(fg_pred[:, 5:])
                 
@@ -1384,7 +1385,7 @@ class ComputeLossAuxOTA:
                 + 3.0 * pair_wise_iou_loss
             )
 
-            matching_matrix = torch.zeros_like(cost)
+            matching_matrix = torch.zeros_like(cost, device='cpu')
 
             for gt_idx in range(num_gt):
                 _, pos_idx = torch.topk(
@@ -1448,7 +1449,7 @@ class ComputeLossAuxOTA:
         matching_targets = [[] for pp in p]
         matching_anchs = [[] for pp in p]
         
-        nl = len(p)    
+        nl = len(p)
     
         for batch_idx in range(p[0].shape[0]):
         
@@ -1474,7 +1475,7 @@ class ComputeLossAuxOTA:
                 
                 b, a, gj, gi = indices[i]
                 idx = (b == batch_idx)
-                b, a, gj, gi = b[idx], a[idx], gj[idx], gi[idx]                
+                b, a, gj, gi = b[idx], a[idx], gj[idx], gi[idx]
                 all_b.append(b)
                 all_a.append(a)
                 all_gj.append(gj)
@@ -1482,7 +1483,7 @@ class ComputeLossAuxOTA:
                 all_anch.append(anch[i][idx])
                 from_which_layer.append(torch.ones(size=(len(b),)) * i)
                 
-                fg_pred = pi[b, a, gj, gi]                
+                fg_pred = pi[b, a, gj, gi]
                 p_obj.append(fg_pred[:, 4:5])
                 p_cls.append(fg_pred[:, 5:])
                 
@@ -1537,7 +1538,7 @@ class ComputeLossAuxOTA:
                 + 3.0 * pair_wise_iou_loss
             )
 
-            matching_matrix = torch.zeros_like(cost)
+            matching_matrix = torch.zeros_like(cost, device='cpu')
 
             for gt_idx in range(num_gt):
                 _, pos_idx = torch.topk(
@@ -1588,7 +1589,7 @@ class ComputeLossAuxOTA:
                 matching_targets[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
                 matching_anchs[i] = torch.tensor([], device='cuda:0', dtype=torch.int64)
 
-        return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs              
+        return matching_bs, matching_as, matching_gjs, matching_gis, matching_targets, matching_anchs
 
     def find_5_positive(self, p, targets):
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)
@@ -1641,7 +1642,7 @@ class ComputeLossAuxOTA:
             indices.append((b, a, gj.clamp_(0, gain[3] - 1), gi.clamp_(0, gain[2] - 1)))  # image, anchor, grid indices
             anch.append(anchors[a])  # anchors
 
-        return indices, anch                 
+        return indices, anch
 
     def find_3_positive(self, p, targets):
         # Build targets for compute_loss(), input targets(image,class,x,y,w,h)

@@ -27,8 +27,9 @@ python save_state_dict.py --weights weights/yolov7_last.pt --save_path weights/y
 
 ## TODO
 
-- [ ] allow usage of coco format labels
+- [x] allow usage of coco format labels
 - [ ] allow different backbone learning rate for training
+- [ ] gradient accumulation during training
 
 ## Web Demo
 
