@@ -17,6 +17,8 @@ Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-t
 
 ## To convert weights for use in inference branch
 
+**Warning: remember to change `nc` in the yaml files**
+
 ``` shell
 python reparameterization.py --model_arch yolov7 --training_ckpt runs/train/yolov7/weights/last.pt --output_ckpt weights/yolov7_last.pt --deploy_cfg cfg/deploy/yolov7.yaml --nc 80
 ```
@@ -28,6 +30,7 @@ python save_state_dict.py --weights weights/yolov7_last.pt --save_path weights/y
 ## TODO
 
 - [x] allow usage of coco format labels
+- [ ] add built-in support for [fdet-api](https://github.com/yhsmiley/fdet-api)
 - [ ] allow different backbone learning rate for training
 - [ ] gradient accumulation during training
 
