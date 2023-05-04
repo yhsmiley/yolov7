@@ -15,6 +15,7 @@ class SplitTrainVal:
     self.test = test
 
   def split_into_folders(self, labels, folder_name):
+    # Create relevant folders
     op_img_parent_folder = self.output_folder / folder_name / "images"
     op_label_parent_folder = self.output_folder / folder_name / "labels"
     print(f"Output will be stored in:\nImages: {op_img_parent_folder}\nLabels:{op_label_parent_folder}")
@@ -29,6 +30,7 @@ class SplitTrainVal:
     op_img_parent_folder.mkdir(parents=True, exist_ok=True)
     op_label_parent_folder.mkdir(parents=True, exist_ok=True)
 
+    # Copying images into their new folders
     img_exts = [".jpg", ".jpeg", ".png"]
     for label in labels:
       label_path = Path(label)
@@ -97,6 +99,13 @@ def main(input_folder, output_folder, test):
       input_folder=input_folder,
       output_folder=output_folder
     ).run()
+  
+  # Clean up: Deleting original `images` and `labels` folders if input_folder == output_folder
+  if input_folder == output_folder:
+    shutil.rmtree(str((Path(input_folder) / 'images')))
+    shutil.rmtree(str((Path(input_folder) / 'labels')))
+    print(f"Detected that input and output folders are the same")
+    print(f"Deleted existing `images` and `labels` folders in the folder")
   print("Success!")
 
 if __name__ == "__main__":
