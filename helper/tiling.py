@@ -111,9 +111,14 @@ def tile_images(dir, op_dir, slice_size, falsepath):
           sliced = imr[i*slice_size:(i+1)*slice_size, j*slice_size:(j+1)*slice_size]
           sliced_im = Image.fromarray(sliced)
           rgb_im = sliced_im.convert('RGB')
-          slice_path = os.path.join(falsepath, f'{imname}_{i}_{j}{imext}')        
 
-          rgb_im.save(slice_path)
+          # save the image file and generate the label file
+          slice_path = Path(falsepath) / 'images' / f'{imname}_{i}_{j}{imext}'
+          rgb_im.save(str(slice_path))
+          empty_label_path = Path(falsepath) / 'labels' / f'{imname}_{i}_{j}.txt'
+          with open(str(empty_label_path), 'w') as f:
+            pass
+
           imsaved = True
 
 
@@ -129,7 +134,8 @@ def main(dataset_directory, output_folder, falsepath, size):
     print("no falsepath indicated. empty tiles will be thrown away")
 
   if falsepath is not None and not os.path.isdir(falsepath):
-    Path(falsepath).mkdir(parents=True, exist_ok=True)
+    (Path(falsepath) / 'images').mkdir(parents=True, exist_ok=True)
+    (Path(falsepath) / 'labels').mkdir(parents=True, exist_ok=True)
 
   output_path = Path(output_folder)
   if (Path(dataset_directory) / "images").is_dir() and (Path(dataset_directory) / "labels").is_dir():
