@@ -23,8 +23,7 @@ Each image must be of the same size, `640x640` or `1280x1280` are preferred, alt
 Relevant scripts (COCO to YOLO):
 - `coco_to_yolo.py` / `run_coco_to_yolo.sh`
 - `tiling.py`
-- TODO: add `padding.py`
-- `split_train_val.py`
+- `split_train_val_test.py`
 
 Relevant scripts(YOLO to COCO)
 - `yolo_to_coco.py`
