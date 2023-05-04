@@ -7,11 +7,12 @@ import click
 
 class SplitTrainVal:
 
-  def __init__(self, input_folder, output_folder, train=0.8):
+  def __init__(self, input_folder, output_folder, train=0.8, test=0.1):
     self.labels_folder = Path(input_folder) / "labels"
     self.images_folder = Path(input_folder) / "images"
     self.output_folder = Path(output_folder)
     self.train = train
+    self.test = test
 
   def split_into_folders(self, labels, folder_name):
     op_img_parent_folder = self.output_folder / folder_name / "images"
@@ -44,28 +45,58 @@ class SplitTrainVal:
       shutil.copy(str(label), str(label_dst))
 
 
-  def run(self):
+  def run(self, split_test=False):
     all_labels = glob(str(self.labels_folder) + "/*.txt")
+    shuffle(all_labels)
+
     num_of_images = len(all_labels)
     num_of_train_images = int(self.train * num_of_images)
-    shuffle(all_labels)
+
+    if split_test:
+      val_ratio = round(1.0 - self.train - self.test, 4) # floating point precision issues
+      val_percentage_of_remaining = val_ratio / (val_ratio + self.test)
+      # num_of_val_images = int(val_ratio * num_of_images)
+      num_of_val_images = int((num_of_images - num_of_train_images) * val_percentage_of_remaining)
+    else:
+      num_of_val_images = num_of_images - num_of_train_images
+
     train_labels = all_labels[:num_of_train_images]
-    val_labels = all_labels[num_of_train_images+1:]
+    val_labels = all_labels[num_of_train_images:num_of_train_images+num_of_val_images]
 
     # Split into folders
     self.split_into_folders(train_labels, "train")
     print(f"Done with train folder: {num_of_train_images} images")
     self.split_into_folders(val_labels, "val")
-    print(f"Done with val folder: {num_of_images - num_of_train_images} images")
+    print(f"Done with val folder: {num_of_val_images} images")
+
+    if split_test:
+      test_labels = all_labels[num_of_train_images+num_of_val_images:]
+      num_of_test_images = num_of_images - num_of_train_images - num_of_val_images
+      self.split_into_folders(test_labels, "test")
+      print(f"Done with test folder: {num_of_test_images} images")
+      print(f"Final split of {num_of_images} images: {{ Train: {self.train:.2f} ({num_of_train_images}), Val: {val_ratio:.2f} ({num_of_val_images}), Test: {self.test:.2f} ({num_of_test_images}) }}")
+    else:
+      print(f"Final split of {num_of_images} images: {{ Train: {self.train:.2f} ({num_of_train_images}), Val: {(1.0 - self.train):.2f} ({num_of_val_images}) }}")
 
 @click.command()
 @click.argument('input_folder')
 @click.argument('output_folder')
-def main(input_folder, output_folder):
-  SplitTrainVal(
-    input_folder=input_folder,
-    output_folder=output_folder
-  ).run()
+@click.option('-t', '--test') # split into test folder as well
+def main(input_folder, output_folder, test):
+  if test:
+    print(f"Splitting into train, val and test folders")
+    SplitTrainVal(
+      input_folder=input_folder,
+      output_folder=output_folder
+    ).run(
+      split_test=True
+      )
+  else:
+    print(f"Splitting into train and val folders")
+    SplitTrainVal(
+      input_folder=input_folder,
+      output_folder=output_folder
+    ).run()
   print("Success!")
 
 if __name__ == "__main__":
