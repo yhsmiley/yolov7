@@ -20,12 +20,12 @@ class SplitTrainVal:
     print(f"Output will be stored in:\nImages: {op_img_parent_folder}\nLabels:{op_label_parent_folder}")
 
     try:
-        shutil.rmtree(str(op_img_parent_folder))
-        shutil.rmtree(str(op_label_parent_folder))
+      shutil.rmtree(str(op_img_parent_folder))
+      shutil.rmtree(str(op_label_parent_folder))
     except Exception:
-        print("Output folders do not exist, creating folders...")
+      print("Output folders do not exist, creating folders...")
     else:
-        print("Deleted existing contents in output folders...")
+      print("Deleted existing contents in output folders...")
     op_img_parent_folder.mkdir(parents=True, exist_ok=True)
     op_label_parent_folder.mkdir(parents=True, exist_ok=True)
 
