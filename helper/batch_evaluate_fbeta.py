@@ -7,7 +7,7 @@ from pycocotools.cocoeval import COCOeval
 import json
 from pathlib import Path
 from glob import glob
-import click
+import argparse
 import csv
 
 def evaluate_fbeta(true_path, pred_path):
@@ -62,7 +62,10 @@ def run_fbeta_evaluation(pred_folder, prefix, gt_file, output_csv):
   results = []
   error_folders = []
   for i in range(50, 1001, 50): # edit here if batch is different
-    folder_name = prefix + "_" + str(i)
+    if prefix:
+      folder_name = prefix + "_" + str(i)
+    else:
+      folder_name = str(i)
     pred_path = Path(pred_folder) / folder_name
     pred_json = glob(str(pred_path) + "/*.json")
     if len(pred_json) != 1:
@@ -85,13 +88,15 @@ def run_fbeta_evaluation(pred_folder, prefix, gt_file, output_csv):
   
   print("completed")
 
-@click.command()
-@click.argument('pred_folder')
-@click.argument('prefix')
-@click.argument('gt_file')
-@click.argument('output_csv')
-def main(pred_folder, prefix, gt_file, output_csv):
-  run_fbeta_evaluation(pred_folder, prefix, gt_file, output_csv)
+def main():
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--pred', type=str, required=True, help='folder containing the folders of the prediction jsons')
+  parser.add_argument('--prefix', type=str, default=None, help='prefix of the folders in the folder')
+  parser.add_argument('--gt', type=str, required=True, help='ground truth json')
+  parser.add_argument('--output', type=str, required=True, help='output csv file')
+  opt = parser.parse_args()
+  print(opt)
+  run_fbeta_evaluation(opt.pred, opt.prefix, opt.gt, opt.output)
 
 
 if __name__ == '__main__':
