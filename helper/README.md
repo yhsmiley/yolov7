@@ -6,7 +6,10 @@ Combines datasets of the same annotation format together
 
 Relevant scripts:
 - `combine_yolo_datasets.py`
-- TODO: Add combine COCO datasets code
+- For combining COCO datasets, you may use [pyodi](https://gradiant.github.io/pyodi/reference/apps/coco-merge/). For example:
+```bash
+pyodi coco merge coco_1.json coco_2.json output.json
+```
 
 ### Converting Datasets with Different Annotation Formats
 Converts datasets between COCO and YOLO format
