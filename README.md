@@ -27,7 +27,7 @@ This branch closely aligns with the official YOLOv7 repository, with the inclusi
 
 ### Conversion of Weights (for Inference Branch)
 
-- To convert the weights for utilization in the inference branch, follow these steps:
+- To convert the weights for utilisation in the inference branch, follow these steps:
 
     1. Reparameterize the weights:
         ```bash
@@ -40,7 +40,7 @@ This branch closely aligns with the official YOLOv7 repository, with the inclusi
         ```
     **Note: Ensure you modify the `nc` value in the `yaml` files to match the desired number of classes.**
 
-- Alternatively, you can edit the weights, save_path, and cfg parameters in the provided bash script and run it:
+- Alternatively, you can edit the `weights`, `save_path`, and `cfg` parameters in the provided bash script and run it:
     ```bash
     bash run_reparam_state_dict.sh
     ```
@@ -71,7 +71,7 @@ By executing the provided commands, the script will perform object detection and
 
 ## Helper Scripts
 
-Within the `helper` folder, you will discover various scripts, including conversion scripts. For detailed information on these helper functions, kindly refer to the [Helper Function README](https://github.com/DinoHub/yolov7_pipeline/blob/main/helper/README.md)
+Within the `helper` folder, you will discover various scripts, including conversion scripts. For detailed information on these helper functions, please refer to the [Helper Function README](https://github.com/DinoHub/yolov7_pipeline/blob/main/helper/README.md).
 
 ## TODO
 
