@@ -5,8 +5,6 @@
 from pycocotools.coco import COCO
 from pycocotools.cocoeval import COCOeval
 import json
-from pathlib import Path
-from glob import glob
 import click
 
 def evaluate_fbeta(true_path, pred_path):
@@ -19,7 +17,7 @@ def evaluate_fbeta(true_path, pred_path):
   f2_score, _, precision, recall = cocoEval.getBestFBeta(beta=2, iouThr=.65, average='macro')
   return f1_score, f2_score, precision, recall
 
-# pycocotools require each image to have at least 1 bbox for evaluation
+# pycocotools requires each image to have at least 1 bbox for evaluation
 # this function fills in images with no annotations with a dummy annotation (edits the prediction.json file directly)
 def check_and_fill_in_missing_annotations(pred_json, gt_file):
   print(pred_json, gt_file)
