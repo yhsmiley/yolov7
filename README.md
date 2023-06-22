@@ -1,21 +1,77 @@
-# YOLOv7
+# YOLOv7 Pipeline (Main Branch)
+
+This branch closely aligns with the official YOLOv7 repository, with the inclusion of extra functionalities such as helper scripts located in the `helper` folder. If you intend to perform inference using YOLOv7 as a package, please switch to the `inference` branch.
+
+# Table of Contents
+- [YOLOv7 Pipeline (Main Branch)](#yolov7-pipeline-main-branch)
+  - [Adapted/Forked from WongKinYiu's Repository](#adaptedforked-from-wongkinyius-repository)
+  - [Additional Functionalities](#additional-functionalities)
+    - [Conversion of Weights (for Inference Branch)](#conversion-of-weights-for-inference-branch)
+    - [Detection + Tracking with DeepSORT](#detection--tracking-with-deepsort)
+    - [Helper Scripts](#helper-scripts)
+  - [TODO](#todo)
+- [Official YOLOv7](#official-yolov7)
+  - [Web Demo](#web-demo)
+  - [Performance](#performance)
+  - [Installation](#installation)
+  - [Testing](#testing)
+  - [Training](#training)
+  - [Transfer learning](#transfer-learning)
 
 ## Adapted/Forked from WongKinYiu's Repository
 
 - Repository Link: https://github.com/WongKinYiu/yolov7
 - Last "merge" date: 17th Jan 2023
 
-## To convert weights for use in inference branch
+## Additional Functionalities
 
-**Warning: remember to change `nc` in the yaml files**
+### Conversion of Weights (for Inference Branch)
 
-``` shell
-python reparameterization.py --model_arch yolov7 --training_ckpt runs/train/yolov7/weights/last.pt --output_ckpt weights/yolov7_last.pt --deploy_cfg cfg/deploy/yolov7.yaml --nc 80
+- To convert the weights for utilization in the inference branch, follow these steps:
+
+    1. Reparameterize the weights:
+        ```bash
+        python reparameterization.py --model_arch yolov7 --training_ckpt runs/train/yolov7/weights/last.pt --output_ckpt weights/yolov7_last.pt --deploy_cfg cfg/deploy/yolov7.yaml --nc 80
+        ```
+
+    1. Save the state dictionary:
+        ```bash
+        python save_state_dict.py --weights weights/yolov7_last.pt --save_path weights/yolov7_last_state.pt --cfg cfg/deploy/yolov7.yaml
+        ```
+    **Note: Ensure you modify the `nc` value in the `yaml` files to match the desired number of classes.**
+
+- Alternatively, you can edit the weights, save_path, and cfg parameters in the provided bash script and run it:
+    ```bash
+    bash run_reparam_state_dict.sh
+    ```
+    **Note: Ensure you modify the `nc` value in the `yaml` files to match the desired number of classes.**
+
+### Detection + Tracking with DeepSORT
+
+Before using the detect_track.py script, it is necessary to install DeepSORT by executing the following command:
+```bash
+pip install deep-sort-realtime
 ```
 
-``` shell
-python save_state_dict.py --weights weights/yolov7_last.pt --save_path weights/yolov7_last_state.pt --cfg cfg/deploy/yolov7.yaml
-```
+The `detect_track.py` script functions similarly to `detect.py`, but with the integration of **DeepSORT** and an additional option to **suppress small bounding boxes** using the `--suppress-small-bboxes` flag.
+
+To run the script, follow these instructions:
+
+- For video processing:
+    ```bash
+    python detect_track.py --weights yolov7.pt --conf 0.25 --img-size 640 --source yourvideo.mp4 --suppress-small-bboxes 400
+    ```
+
+- For image processing:
+    ```bash
+    python detect_track.py --weights yolov7.pt --conf 0.25 --img-size 640 --source inference/images/horses.jpg --suppress-small-bboxes 400
+    ```
+
+By executing the provided commands, the script will perform object detection and tracking using DeepSORT, either on a video or an image, depending on your chosen input source.
+
+## Helper Scripts
+
+Within the `helper` folder, you will discover various scripts, including conversion scripts. For detailed information on these helper functions, kindly refer to the [Helper Function README](https://github.com/DinoHub/yolov7_pipeline/blob/main/helper/README.md)
 
 ## TODO
 
