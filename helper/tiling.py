@@ -17,6 +17,10 @@ def tile_images(dir, op_dir, slice_size, falsepath):
   new_labels_path = str(op_dir / "labels")
   Path(new_img_path).mkdir(parents=True, exist_ok=True)
   Path(new_labels_path).mkdir(parents=True, exist_ok=True)
+  
+  if falsepath:
+    (Path(falsepath) / "images").mkdir(parents=True, exist_ok=True)
+    (Path(falsepath) / "labels").mkdir(parents=True, exist_ok=True)
 
   # tile all images in a loop
   for t, img_filename in enumerate(os.listdir(img_path)):
