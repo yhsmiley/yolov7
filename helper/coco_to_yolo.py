@@ -151,11 +151,6 @@ def main(img_folder, json_path, output_path):
       json_path=json_path,
       output_path=output_path
     ).run()
-    # ConvertCOCOToYOLO(
-    #   img_folder='/home/wenyi/DATA/synthetics/DOTA_GTAV_Experiment/dotav2_3_hbb/',
-    #   json_path='/home/wenyi/DATA/synthetics/DOTA_GTAV_Experiment/dotav2_3_hbb/annotations.json',
-    #   output_path='/home/wenyi/DATA/synthetics/DOTA_GTAV_Experiment/yolo_dotav2_3_no_clf/'
-    # ).run()
 
 if __name__ == "__main__":
     main()
