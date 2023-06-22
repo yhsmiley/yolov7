@@ -56,7 +56,6 @@ def check_and_fill_in_missing_annotations(pred_json, gt_file):
 # prints f1 and f2 scores, together with precision and recall
 def run_fbeta_evaluation(pred_json, gt_file):
   print("running fbeta eval")
-  pred_json = pred_json
   check_and_fill_in_missing_annotations(pred_json, gt_file)
   f1_score, f2_score, precision, recall = evaluate_fbeta(gt_file, pred_json)
   print("f1_score, f2_score, precision, recall")
