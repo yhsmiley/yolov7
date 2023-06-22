@@ -74,8 +74,8 @@ class ConvertCOCOToYOLO:
         img_mappings = {}
         img_dimensions = {}
         for img in data[imgs_key]:
-          img_mappings[img["id"]] = img["file_name"]
-          img_dimensions[img["id"]] = (img["width"], img["height"])
+          img_mappings[img[img_id]] = img["filename"]
+          img_dimensions[img[img_id]] = (img["width"], img["height"])
 
         # Retrieve data
         for i in range(len(data[annotation_key])):
