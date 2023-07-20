@@ -86,7 +86,7 @@ class YOLOv7:
                 these_imgs = these_imgs.half()
             batches.append(these_imgs)
 
-        if self.device_num is not None
+        if self.device_num is not None:
             with torch.cuda.device(self.device_num):
                 preds = self._batch_pred(batches)
         else:
