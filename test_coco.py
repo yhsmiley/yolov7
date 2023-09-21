@@ -32,6 +32,7 @@ def test(data,
          single_cls=False,
          augment=False,
          verbose=False,
+         fbeta_average_method='macro',
          # model=None,
          dataloader=None,
          save_dir=Path(''),  # for saving images
@@ -272,9 +273,9 @@ def test(data,
             
             if evaluate_fbeta:
                 cocoEval.accumulateFBeta()
-                f1_score, _, mp, mr = cocoEval.getBestFBeta(beta=1, iouThr=iou_thres, average='macro')
-                f2_score, _, _, _ = cocoEval.getBestFBeta(beta=2, iouThr=iou_thres, average='macro')
-                cocoEval.summarizeFBetaScores(average='macro')
+                f1_score, _, mp, mr = cocoEval.getBestFBeta(beta=1, iouThr=iou_thres, average=fbeta_average_method)
+                f2_score, _, _, _ = cocoEval.getBestFBeta(beta=2, iouThr=iou_thres, average=fbeta_average_method)
+                cocoEval.summarizeFBetaScores(average=fbeta_average_method)
                 print(f"Results:")
                 s = ('%20s ' * 6) % ('f1-score', 'f2-score', 'P', 'R', 'map', 'map50')
                 print(f"{s}")
@@ -350,6 +351,7 @@ if __name__ == '__main__':
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
     parser.add_argument('--evaluate-fbeta', action='store_true', help='to evaluate f1 & f2 scores (default evaluates mAP only)')
+    parser.add_argument('--fbeta-average', choices=['macro', 'micro', 'weighted'], default='macro', help="averaging method for F-beta score (choices: 'macro', 'micro', 'weighted', default: 'macro')")
     opt = parser.parse_args()
     opt.save_json |= opt.data.endswith('coco.yaml')
     opt.data = check_file(opt.data)  # check file
@@ -369,6 +371,7 @@ if __name__ == '__main__':
              opt.single_cls,
              opt.augment,
              opt.verbose,
+             opt.fbeta_average,
              save_txt=opt.save_txt | opt.save_hybrid,
              save_hybrid=opt.save_hybrid,
              save_conf=opt.save_conf,
