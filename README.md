@@ -15,7 +15,7 @@ Implementation of paper - [YOLOv7: Trainable bag-of-freebies sets new state-of-t
     </a>
 </div>
 
-## To convert weights for use in inference branch
+## Reparameterization (to convert weights for use in inference branch)
 
 **Warning: remember to change `nc` in the yaml files**
 
@@ -25,6 +25,45 @@ python reparameterization.py --model_arch yolov7 --training_ckpt runs/train/yolo
 
 ``` shell
 python save_state_dict.py --weights weights/yolov7_last.pt --save_path weights/yolov7_last_state.pt --cfg cfg/deploy/yolov7.yaml
+```
+
+## Testing/Evaluating (with pycocotools)
+`test.py` is a Python script for evaluating models with COCO ground truth annotations. Please follow the instructions below to use it effectively.
+
+### Prerequisites
+
+Before using `test.py`, ensure the following prerequisites are met:
+
+1. **`fdet-api`**: Download [fdet-api](https://github.com/yhsmiley/fdet-api/blob/master/PythonAPI/pycocotools/cocoeval.py).
+
+1. **COCO JSON File**: Provide a COCO JSON file containing ground truth annotations in the same folder as your image dataset. JSON image file names should match image file names.
+
+1. **Weight Reparameterization**: Note that you have to reparameterize the weights before testing (refer to [Reparameterization](#reparameterization-to-convert-weights-for-use-in-inference-branch).
+
+1. **COCO Annotation Format**: Annotations (e.g., `cat_id`, `ann_id`, `image_id`, etc.) must adhere to standard COCO format (start from 1).
+
+1. **`iscrowd` Annotation**: Ensure `iscrowd` exists in the ground truth annotations.
+
+### Key Parameters
+
+- `--cfg`: Path to the model's .yaml file (eg. cfg/deploy/yolov7.yaml). Note that you should use the `deploy` cfg and not `training`.
+
+- `--data`: Path to the data file (eg. data/coco.yaml). This YAML file will contain the path to the COCO JSON file.
+
+- `--save-json`: Save a cocoapi-compatible JSON results file and evaluate using pycocotools (Default: False).
+
+- `--evaluate-fbeta`: Enable evaluation of F1 and F2 scores (the default evaluates mAP only) (Default: False).
+
+- `--results-csv`: Path to an output CSV file to save F-beta results (Default: None).
+
+For advanced usage, consult the script's documentation or comments.
+
+### Example Usage
+
+Here's an example command to run the test script:
+
+```bash
+python test.py --weights yolov7.pt --cfg cfg/deploy/yolov7.yaml --data data/coco.yaml --batch-size 32 --img-size 640 --conf-thres 0.001 --iou-thres 0.65 --task test --device 0 --save-txt --save-json --results-csv results.csv --evaluate-fbeta
 ```
 
 ## TODO
