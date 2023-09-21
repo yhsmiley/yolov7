@@ -244,29 +244,36 @@ class End2End(nn.Module):
 
 
 
-def attempt_load(weights, map_location=None):
+def attempt_load_state_dict(models, weights, map_location=None):
     # Loads an ensemble of models weights=[a,b,c] or a single model weights=[a] or weights=a
-    model = Ensemble()
-    for w in weights if isinstance(weights, list) else [weights]:
-        # attempt_download(w)
-        ckpt = torch.load(w, map_location=map_location)  # load
-        model.append(ckpt['ema' if ckpt.get('ema') else 'model'].float().fuse().eval())  # FP32 model
-    
+    ensemble_model = Ensemble()
+    models = models if isinstance(models, list) else [models]
+    weights = weights if isinstance(weights, list) else [weights]
+    class_names = []
+    for i, w in enumerate(weights):
+        checkpoint = torch.load(w, map_location=map_location)
+        model = models[i]
+        model.fuse()
+        model.load_state_dict(checkpoint['state_dict'])
+        model.eval()
+        ensemble_model.append(model)
+        class_names.append(checkpoint['class_names'])
+
     # Compatibility updates
-    for m in model.modules():
+    for m in ensemble_model.modules():
         if type(m) in [nn.Hardswish, nn.LeakyReLU, nn.ReLU, nn.ReLU6, nn.SiLU]:
             m.inplace = True  # pytorch 1.7.0 compatibility
         elif type(m) is nn.Upsample:
             m.recompute_scale_factor = None  # torch 1.11.0 compatibility
         elif type(m) is Conv:
             m._non_persistent_buffers_set = set()  # pytorch 1.6.0 compatibility
-    
-    if len(model) == 1:
-        return model[-1]  # return model
+
+    if len(ensemble_model) == 1:
+        return ensemble_model[-1], class_names[-1]  # return model
     else:
         print('Ensemble created with %s\n' % weights)
         for k in ['names', 'stride']:
-            setattr(model, k, getattr(model[-1], k))
-        return model  # return ensemble
+            setattr(ensemble_model, k, getattr(ensemble_model[-1], k))
+        return ensemble_model, class_names  # return ensemble
 
 
