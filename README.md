@@ -28,7 +28,7 @@ python save_state_dict.py --weights weights/yolov7_last.pt --save_path weights/y
 ```
 
 ## Testing/Evaluating (with pycocotools)
-`test.py` is a Python script for evaluating models with COCO ground truth annotations. Please follow the instructions below to use it effectively.
+`test_coco.py` is a Python script for evaluating models with COCO ground truth annotations. Please follow the instructions below to use it effectively.
 
 ### Prerequisites
 
@@ -63,7 +63,7 @@ For advanced usage, consult the script's documentation or comments.
 Here's an example command to run the test script:
 
 ```bash
-python test.py --weights yolov7.pt --cfg cfg/deploy/yolov7.yaml --data data/coco.yaml --batch-size 32 --img-size 640 --conf-thres 0.001 --iou-thres 0.65 --task test --device 0 --save-txt --save-json --results-csv results.csv --evaluate-fbeta
+python test_coco.py --weights yolov7.pt --cfg cfg/deploy/yolov7.yaml --data data/coco.yaml --batch-size 32 --img-size 640 --conf-thres 0.001 --iou-thres 0.65 --task test --device 0 --save-txt --save-json --results-csv results.csv --evaluate-fbeta
 ```
 
 ## TODO
