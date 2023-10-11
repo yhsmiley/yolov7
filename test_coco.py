@@ -273,13 +273,13 @@ def test(data,
             
             if evaluate_fbeta:
                 cocoEval.accumulateFBeta()
-                f1_score, _, mp, mr = cocoEval.getBestFBeta(beta=1, iouThr=iou_thres, average=fbeta_average_method)
-                f2_score, _, _, _ = cocoEval.getBestFBeta(beta=2, iouThr=iou_thres, average=fbeta_average_method)
                 cocoEval.summarizeFBetaScores(average=fbeta_average_method)
+                f1_score, _, _, _ = cocoEval.getBestFBeta(beta=1, iouThr=iou_thres, average=fbeta_average_method)
+                f2_score, _, _, _ = cocoEval.getBestFBeta(beta=2, iouThr=iou_thres, average=fbeta_average_method)
                 print(f"Results:")
-                s = ('%20s ' * 6) % ('f1-score', 'f2-score', 'P', 'R', 'map', 'map50')
+                s = ('%20s ' * 4) % ('f1-score', 'f2-score', 'map', 'map50')
                 print(f"{s}")
-                s = ('%20s ' * 6) % (f1_score, f2_score, mp, mr, map, map50)
+                s = ('%20s ' * 4) % (f1_score, f2_score, map, map50)
                 print(f"{s}")
                 
                 evaluate_fbeta_success = True
@@ -287,7 +287,7 @@ def test(data,
             if results_csv:
                 import csv
                 
-                result = [save_dir, f1_score, f2_score, mp, mr, map, map50]
+                result = [save_dir, f1_score, f2_score, map, map50]
                 if os.path.isfile(results_csv):
                     # append to csv
                     with open(results_csv, 'a', encoding='UTF8') as f:
@@ -298,7 +298,7 @@ def test(data,
                     # create new csv
                     with open(results_csv, 'w', encoding='UTF8') as f:
                         writer = csv.writer(f)
-                        header = ['save dir', 'f1', 'f2', 'precision', 'recall', 'map', 'map50']
+                        header = ['save dir', 'f1', 'f2', 'map', 'map50']
                         writer.writerow(header)
                         writer.writerow(result)
                         print(f"New CSV file created: {results_csv} and results added")
