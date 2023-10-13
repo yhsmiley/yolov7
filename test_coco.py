@@ -95,7 +95,7 @@ def test(data,
     confusion_matrix = ConfusionMatrix(nc=nc)
     names = data['names']
     s = ('%20s' + '%12s' * 6) % ('Class', 'Images', 'Labels', 'P', 'R', 'mAP@.5', 'mAP@.5:.95')
-    p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
+    p, r, f1, mp, mr, mean_average_precision_50, mean_average_precision, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
     # for batch_i, (img, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
@@ -221,14 +221,14 @@ def test(data,
     if len(stats) and stats[0].any():
         p, r, ap, f1, ap_class = ap_per_class(*stats, plot=plots, save_dir=save_dir, names=names)
         ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
-        mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
+        mp, mr, mean_average_precision_50, mean_average_precision = p.mean(), r.mean(), ap50.mean(), ap.mean()
         nt = np.bincount(stats[3].astype(np.int64), minlength=nc)  # number of targets per class
     else:
         nt = torch.zeros(1)
 
     # Print results
     pf = '%20s' + '%12i' * 2 + '%12.3g' * 4  # print format
-    print(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
+    print(pf % ('all', seen, nt.sum(), mp, mr, mean_average_precision_50, mean_average_precision))
 
     # Print results per class
     if (verbose or nc < 50) and nc > 1 and len(stats):
@@ -269,7 +269,7 @@ def test(data,
             cocoEval.evaluate()
             cocoEval.accumulate()
             cocoEval.summarize()
-            map, map50 = cocoEval.stats[:2]  # update results (mAP@0.5:0.95, mAP@0.5)
+            mean_average_precision, mean_average_precision_50 = cocoEval.stats[:2]  # update results (mAP@0.5:0.95, mAP@0.5)
             
             if evaluate_fbeta:
                 cocoEval.accumulateFBeta()
@@ -279,7 +279,7 @@ def test(data,
                 print(f"Results:")
                 s = ('%20s ' * 4) % ('f1-score', 'f2-score', 'map', 'map50')
                 print(f"{s}")
-                s = ('%20s ' * 4) % (f1_score, f2_score, map, map50)
+                s = ('%20s ' * 4) % (f1_score, f2_score, mean_average_precision, mean_average_precision_50)
                 print(f"{s}")
                 
                 evaluate_fbeta_success = True
@@ -287,7 +287,7 @@ def test(data,
             if results_csv:
                 import csv
                 
-                result = [save_dir, f1_score, f2_score, map, map50]
+                result = [save_dir, f1_score, f2_score, mean_average_precision, mean_average_precision_50]
                 if os.path.isfile(results_csv):
                     # append to csv
                     with open(results_csv, 'a', encoding='UTF8') as f:
@@ -318,12 +318,12 @@ def test(data,
     # Return results
     s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
     print(f"Results saved to {save_dir}{s}")
-    maps = np.zeros(nc) + map
+    maps = np.zeros(nc) + mean_average_precision
     for i, c in enumerate(ap_class):
         maps[c] = ap[i]
     if evaluate_fbeta_success:
-        return (f1_score, f2_score, mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
-    return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
+        return (f1_score, f2_score, mp, mr, mean_average_precision_50, mean_average_precision, *(loss.cpu() / len(dataloader)).tolist()), maps, t
+    return (mp, mr, mean_average_precision_50, mean_average_precision, *(loss.cpu() / len(dataloader)).tolist()), maps, t
 
 
 if __name__ == '__main__':
