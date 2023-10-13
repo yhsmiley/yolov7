@@ -28,9 +28,11 @@ def test(data,
          conf_thres=0.001,
          iou_thres=0.6,  # for NMS
          save_json=False,
+         results_csv=None,
          single_cls=False,
          augment=False,
          verbose=False,
+         fbeta_average_method='macro',
          # model=None,
          dataloader=None,
          save_dir=Path(''),  # for saving images
@@ -40,8 +42,9 @@ def test(data,
          plots=True,
          wandb_logger=None,
          # compute_loss=None,
-         half_precision=True,
-         trace=False):
+         half_mp=True,
+         trace=False,
+         evaluate_fbeta=False):
     # Initialize/load model and set device
     set_logging()
     device = select_device(opt.device, batch_size=batch_size)
@@ -62,7 +65,7 @@ def test(data,
         model = TracedModel(model, device, opt.img_size)
 
     # Half
-    half = device.type != 'cpu' and half_precision  # half precision only supported on CUDA
+    half = device.type != 'cpu' and half_mp  # half mp only supported on CUDA
     if half:
         model.half()
 
@@ -92,7 +95,7 @@ def test(data,
     confusion_matrix = ConfusionMatrix(nc=nc)
     names = data['names']
     s = ('%20s' + '%12s' * 6) % ('Class', 'Images', 'Labels', 'P', 'R', 'mAP@.5', 'mAP@.5:.95')
-    p, r, f1, mp, mr, map50, map, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
+    p, r, f1, mp, mr, mean_average_precision_50, mean_average_precision, t0, t1 = 0., 0., 0., 0., 0., 0., 0., 0., 0.
     loss = torch.zeros(3, device=device)
     jdict, stats, ap, ap_class, wandb_images = [], [], [], [], []
     # for batch_i, (img, targets, paths, shapes) in enumerate(tqdm(dataloader, desc=s)):
@@ -218,14 +221,14 @@ def test(data,
     if len(stats) and stats[0].any():
         p, r, ap, f1, ap_class = ap_per_class(*stats, plot=plots, save_dir=save_dir, names=names)
         ap50, ap = ap[:, 0], ap.mean(1)  # AP@0.5, AP@0.5:0.95
-        mp, mr, map50, map = p.mean(), r.mean(), ap50.mean(), ap.mean()
+        mp, mr, mean_average_precision_50, mean_average_precision = p.mean(), r.mean(), ap50.mean(), ap.mean()
         nt = np.bincount(stats[3].astype(np.int64), minlength=nc)  # number of targets per class
     else:
         nt = torch.zeros(1)
 
     # Print results
     pf = '%20s' + '%12i' * 2 + '%12.3g' * 4  # print format
-    print(pf % ('all', seen, nt.sum(), mp, mr, map50, map))
+    print(pf % ('all', seen, nt.sum(), mp, mr, mean_average_precision_50, mean_average_precision))
 
     # Print results per class
     if (verbose or nc < 50) and nc > 1 and len(stats):
@@ -255,7 +258,8 @@ def test(data,
         with open(pred_json, 'w') as f:
             json.dump(jdict, f)
 
-        try:  # https://github.com/cocodataset/cocoapi/blob/master/PythonAPI/pycocoEvalDemo.ipynb
+        evaluate_fbeta_success = False
+        try:  # https://github.com/yhsmiley/fdet-api/
             from pycocotools.coco import COCO
             from pycocotools.cocoeval import COCOeval
 
@@ -265,17 +269,55 @@ def test(data,
             cocoEval.evaluate()
             cocoEval.accumulate()
             cocoEval.summarize()
-            map, map50 = cocoEval.stats[:2]  # update results (mAP@0.5:0.95, mAP@0.5)
+            mean_average_precision, mean_average_precision_50 = cocoEval.stats[:2]  # update results (mAP@0.5:0.95, mAP@0.5)
+            
+            if evaluate_fbeta:
+                cocoEval.accumulateFBeta()
+                cocoEval.summarizeFBetaScores(average=fbeta_average_method)
+                f1_score, _, _, _ = cocoEval.getBestFBeta(beta=1, iouThr=iou_thres, average=fbeta_average_method)
+                f2_score, _, _, _ = cocoEval.getBestFBeta(beta=2, iouThr=iou_thres, average=fbeta_average_method)
+                print(f"Results:")
+                s = ('%20s ' * 4) % ('best f1-score', 'best f2-score', 'map', 'map50')
+                print(f"{s}")
+                s = ('%20s ' * 4) % (f1_score, f2_score, mean_average_precision, mean_average_precision_50)
+                print(f"{s}")
+                
+                evaluate_fbeta_success = True
+
+            if results_csv:
+                import csv
+                
+                result = [save_dir, f1_score, f2_score, mean_average_precision, mean_average_precision_50]
+                if os.path.isfile(results_csv):
+                    # append to csv
+                    with open(results_csv, 'a', encoding='UTF8') as f:
+                        writer = csv.writer(f)
+                        writer.writerow(result)
+                    print(f"Results appended to existing CSV file: {results_csv}")
+                else:
+                    # create new csv
+                    with open(results_csv, 'w', encoding='UTF8') as f:
+                        writer = csv.writer(f)
+                        header = ['save dir', 'f1', 'f2', 'map', 'map50']
+                        writer.writerow(header)
+                        writer.writerow(result)
+                        print(f"New CSV file created: {results_csv} and results added")
+        
         except Exception as e:
-            print(f'pycocotools unable to run: {e}')
+            if isinstance(e, IsADirectoryError):
+                print(
+                    f"ERROR: Invalid data format for pycocotools evaluation.\n"
+                    f"\tThe provided 'data' YAML file indicates a directory, but a .json file is required.\n"
+                    f"\tPlease provide the path to a valid .json file instead of a directory to evaluate with pycocotools.\n"
+                    f"\tError Details: {e}"
+                )
+            else:
+                print(f'ERROR: pycocotools unable to run:\n\t{e}')
+            
 
     # Return results
     s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
     print(f"Results saved to {save_dir}{s}")
-    maps = np.zeros(nc) + map
-    for i, c in enumerate(ap_class):
-        maps[c] = ap[i]
-    return (mp, mr, map50, map, *(loss.cpu() / len(dataloader)).tolist()), maps, t
 
 
 if __name__ == '__main__':
@@ -295,11 +337,15 @@ if __name__ == '__main__':
     parser.add_argument('--save-txt', action='store_true', help='save results to *.txt')
     parser.add_argument('--save-hybrid', action='store_true', help='save label+prediction hybrid results to *.txt')
     parser.add_argument('--save-conf', action='store_true', help='save confidences in --save-txt labels')
-    parser.add_argument('--save-json', action='store_true', help='save a cocoapi-compatible JSON results file')
+    parser.add_argument('--save-json', action='store_true', help='save a cocoapi-compatible JSON results file and evaluate using pycocotools')
+    parser.add_argument('--results-csv', type=str, default=None, help='output csv file containing the fbeta results')
+
     parser.add_argument('--project', default='runs/test', help='save to project/name')
     parser.add_argument('--name', default='exp', help='save to project/name')
     parser.add_argument('--exist-ok', action='store_true', help='existing project/name ok, do not increment')
     parser.add_argument('--no-trace', action='store_true', help='don`t trace model')
+    parser.add_argument('--evaluate-fbeta', action='store_true', help='to evaluate f1 & f2 scores (default evaluates mAP only)')
+    parser.add_argument('--fbeta-average', choices=['macro', 'micro', 'weighted'], default='macro', help="averaging method for F-beta score (choices: 'macro', 'micro', 'weighted', default: 'macro')")
     opt = parser.parse_args()
     opt.save_json |= opt.data.endswith('coco.yaml')
     opt.data = check_file(opt.data)  # check file
@@ -315,13 +361,16 @@ if __name__ == '__main__':
              opt.conf_thres,
              opt.iou_thres,
              opt.save_json,
+             opt.results_csv,
              opt.single_cls,
              opt.augment,
              opt.verbose,
+             opt.fbeta_average,
              save_txt=opt.save_txt | opt.save_hybrid,
              save_hybrid=opt.save_hybrid,
              save_conf=opt.save_conf,
              trace=not opt.no_trace,
+             evaluate_fbeta=opt.evaluate_fbeta
              )
 
     elif opt.task == 'speed':  # speed benchmarks
