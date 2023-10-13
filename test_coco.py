@@ -318,12 +318,6 @@ def test(data,
     # Return results
     s = f"\n{len(list(save_dir.glob('labels/*.txt')))} labels saved to {save_dir / 'labels'}" if save_txt else ''
     print(f"Results saved to {save_dir}{s}")
-    maps = np.zeros(nc) + mean_average_precision
-    for i, c in enumerate(ap_class):
-        maps[c] = ap[i]
-    if evaluate_fbeta_success:
-        return (f1_score, f2_score, mp, mr, mean_average_precision_50, mean_average_precision, *(loss.cpu() / len(dataloader)).tolist()), maps, t
-    return (mp, mr, mean_average_precision_50, mean_average_precision, *(loss.cpu() / len(dataloader)).tolist()), maps, t
 
 
 if __name__ == '__main__':
