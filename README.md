@@ -32,7 +32,7 @@ python save_state_dict.py --weights weights/yolov7_last.pt --save_path weights/y
 
 ### Prerequisites
 
-Before using `test.py`, ensure the following prerequisites are met:
+Before using `test_coco.py`, ensure the following prerequisites are met:
 
 1. **`fdet-api`**: Download [fdet-api](https://github.com/yhsmiley/fdet-api/blob/master/PythonAPI/pycocotools/cocoeval.py).
 
@@ -41,8 +41,6 @@ Before using `test.py`, ensure the following prerequisites are met:
 1. **Weight Reparameterization**: Note that you have to reparameterize the weights before testing (refer to [Reparameterization](#reparameterization-to-convert-weights-for-use-in-inference-branch).
 
 1. **COCO Annotation Format**: Annotations (e.g., `cat_id`, `ann_id`, `image_id`, etc.) must adhere to standard COCO format (start from 1).
-
-1. **`iscrowd` Annotation**: Ensure `iscrowd` exists in the ground truth annotations.
 
 ### Key Parameters
 
