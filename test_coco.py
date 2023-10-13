@@ -277,7 +277,7 @@ def test(data,
                 f1_score, _, _, _ = cocoEval.getBestFBeta(beta=1, iouThr=iou_thres, average=fbeta_average_method)
                 f2_score, _, _, _ = cocoEval.getBestFBeta(beta=2, iouThr=iou_thres, average=fbeta_average_method)
                 print(f"Results:")
-                s = ('%20s ' * 4) % ('f1-score', 'f2-score', 'map', 'map50')
+                s = ('%20s ' * 4) % ('best f1-score', 'best f2-score', 'map', 'map50')
                 print(f"{s}")
                 s = ('%20s ' * 4) % (f1_score, f2_score, mean_average_precision, mean_average_precision_50)
                 print(f"{s}")
