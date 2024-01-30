@@ -67,7 +67,8 @@ python test_coco.py --weights yolov7.pt --cfg cfg/deploy/yolov7.yaml --data data
 ## TODO
 
 - [x] allow usage of coco format labels
-- [ ] add built-in support for [fdet-api](https://github.com/yhsmiley/fdet-api)
+- [x] add built-in support for [fdet-api](https://github.com/yhsmiley/fdet-api)
+- [ ] extract out some of the hardcoded parameters in nms function
 - [ ] allow different backbone learning rate for training
 - [ ] gradient accumulation during training
 

@@ -1,5 +1,6 @@
 WORKSPACE=/media/data/yolov7
 DATA=/media/data/datasets
+# DATA2=/media/data/fdet-api
 
 docker run -it --rm \
 	--gpus all \
@@ -7,4 +8,8 @@ docker run -it --rm \
 	-v $WORKSPACE:$WORKSPACE \
 	-v $DATA:$DATA \
 	--shm-size=64g \
-	yolov7
+	--net host \
+	yolov7_main
+
+# -v $DATA2:$DATA2 \
+# reid_pipeline_sahi_fr

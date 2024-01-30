@@ -365,6 +365,12 @@ def img2label_paths(img_paths):
     return [str(replace_dir(x, 'images', 'labels').with_suffix('.txt')) for x in img_paths]
 
 
+def get_cache_path(img_paths):
+    parts = list(Path(img_paths[0]).parts)
+    labels_parts = parts[:parts.index('labels')+1]
+    return Path(*labels_parts).with_suffix('.cache')
+
+
 class LoadImagesAndLabels(Dataset):  # for training/testing
     def __init__(self, path, img_size=640, batch_size=16, augment=False, hyp=None, rect=False, image_weights=False,
                  cache_images=False, single_cls=False, stride=32, pad=0.0, prefix='', eval_coco=False):
@@ -420,13 +426,16 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
 
         # Check cache
         self.label_files = img2label_paths(self.img_files)  # labels
-        cache_path = Path(self.label_files[0]).parent.with_suffix('.cache') # cached labels
+        # cache_path = Path(self.label_files[0]).parent.with_suffix('.cache') # cached labels
+        cache_path = get_cache_path(self.label_files)
         if cache_path.is_file():
             cache, exists = torch.load(cache_path), True  # load
             #if cache['hash'] != get_hash(self.label_files + self.img_files) or 'version' not in cache:  # changed
             #    cache, exists = self.cache_labels(cache_path, prefix), False  # re-cache
+
         else:
-            cache, exists = self.cache_labels(cache_path, prefix), False  # cache
+            # cache, exists = self.cache_labels(cache_path, prefix), False  # cache
+            cache, exists = self.check_images(prefix), False  # cache
 
         # Display cache
         nf, nm, ne, nc, n = cache.pop('results')  # found, missing, empty, corrupted, total
@@ -557,6 +566,58 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
         logging.info(f'{prefix}New cache created: {path}')
         return x
 
+    def check_images(self, prefix=''):
+        # check images and read shapes
+        x = {}  # dict
+        nm, nf, ne, nc = 0, 0, 0, 0  # number missing, found, empty, duplicate
+        pbar = tqdm(zip(self.img_files, self.label_files), desc='Scanning images', total=len(self.img_files))
+        for i, (im_file, lb_file) in enumerate(pbar):
+            try:
+                # verify images
+                im = Image.open(im_file)
+                im.verify()  # PIL verify
+                shape = exif_size(im)  # image size
+                segments = []  # instance segments
+                assert (shape[0] > 9) & (shape[1] > 9), f'image size {shape} <10 pixels'
+                assert im.format.lower() in img_formats, f'invalid image format {im.format}'
+
+                # verify labels
+                if os.path.isfile(lb_file):
+                    nf += 1  # label found
+                    with open(lb_file, 'r') as f:
+                        l = [x.split() for x in f.read().strip().splitlines()]
+                        if any([len(x) > 8 for x in l]):  # is segment
+                            classes = np.array([x[0] for x in l], dtype=np.float32)
+                            segments = [np.array(x[1:], dtype=np.float32).reshape(-1, 2) for x in l]  # (cls, xy1...)
+                            l = np.concatenate((classes.reshape(-1, 1), segments2boxes(segments)), 1)  # (cls, xywh)
+                        l = np.array(l, dtype=np.float32)
+                    if len(l):
+                        assert l.shape[1] == 5, 'labels require 5 columns each'
+                        assert (l >= 0).all(), 'negative labels'
+                        assert (l[:, 1:] <= 1).all(), 'non-normalized or out of bounds coordinate labels'
+                        assert np.unique(l, axis=0).shape[0] == l.shape[0], 'duplicate labels'
+                    else:
+                        ne += 1  # label empty
+                        l = np.zeros((0, 5), dtype=np.float32)
+                else:
+                    nm += 1  # label missing
+                    l = np.zeros((0, 5), dtype=np.float32)
+                x[im_file] = [l, shape, segments]
+            except Exception as e:
+                nc += 1
+                print(f'{prefix}WARNING: Ignoring corrupted image and/or label {im_file}: {e}')
+
+            pbar.desc = f"{nf} found, {nm} missing, {ne} empty, {nc} corrupted"
+        pbar.close()
+
+        if nf == 0:
+            print(f'{prefix}WARNING: No labels found. See {help_url}')
+
+        x['hash'] = get_hash(self.label_files + self.img_files)
+        x['results'] = nf, nm, ne, nc, i + 1
+        x['version'] = 0.1  # cache version
+        return x
+
     def __len__(self):
         return len(self.img_files)
 
@@ -623,7 +684,7 @@ class LoadImagesAndLabels(Dataset):  # for training/testing
             #     labels = cutout(img, labels)
             
             if random.random() < hyp['paste_in']:
-                sample_labels, sample_images, sample_masks = [], [], [] 
+                sample_labels, sample_images, sample_masks = [], [], []
                 while len(sample_labels) < 30:
                     sample_labels_, sample_images_, sample_masks_ = load_samples(self, random.randint(0, len(self.labels) - 1))
                     sample_labels += sample_labels_
@@ -987,7 +1048,7 @@ def sample_segments(img, labels, segments, probability=0.5):
         h, w, c = img.shape  # height, width, channels
         for j in random.sample(range(n), k=round(probability * n)):
             l, s = labels[j], segments[j]
-            box = l[1].astype(int).clip(0,w-1), l[2].astype(int).clip(0,h-1), l[3].astype(int).clip(0,w-1), l[4].astype(int).clip(0,h-1) 
+            box = l[1].astype(int).clip(0,w-1), l[2].astype(int).clip(0,h-1), l[3].astype(int).clip(0,w-1), l[4].astype(int).clip(0,h-1)
             
             #print(box)
             if (box[2] <= box[0]) or (box[3] <= box[1]):
@@ -1219,11 +1280,11 @@ def pastein(image, labels, sample_labels, sample_images, sample_masks):
         xmin = max(0, random.randint(0, w) - mask_w // 2)
         ymin = max(0, random.randint(0, h) - mask_h // 2)
         xmax = min(w, xmin + mask_w)
-        ymax = min(h, ymin + mask_h)   
+        ymax = min(h, ymin + mask_h)
         
         box = np.array([xmin, ymin, xmax, ymax], dtype=np.float32)
         if len(labels):
-            ioa = bbox_ioa(box, labels[:, 1:5])  # intersection over area     
+            ioa = bbox_ioa(box, labels[:, 1:5])  # intersection over area
         else:
             ioa = np.zeros(1)
         

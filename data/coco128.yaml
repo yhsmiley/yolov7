@@ -8,8 +8,9 @@
 # 2) file: path/images.txt or path/images.json <- yolo/coco format (Example of a line in images.txt: images/train2017/000000000370.jpg)
 # 3) list: [path1/images/, path2/images.json] <- can mix yolo/coco format
 # Note: if using coco format, images have to be in 'images' folder in the same parent folder as json file, 'file_name' has to be relative to 'images' folder
-train: /media/data/yolov7_orig/coco128/labels.json  # 128 images
-val: /media/data/yolov7_orig/coco128/labels.json  # 128 images
+train: /media/data/yolov7/coco128/labels.json  # 128 images
+val: /media/data/yolov7/coco128/labels.json  # 128 images
+test: /media/data/yolov7/coco128/labels.json  # 128 images
 
 
 # number of classes
